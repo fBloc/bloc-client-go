@@ -30,7 +30,8 @@ func (bC *BlocClient) PersistFunctionRunOptFieldToServer(
 ) (*FuncOptFieldServerPersisResp, error) {
 	req := FuncRunOptPersistToObjectStorageHttpReq{
 		FunctionRunRecordID: funcRunRecordID,
-		OptKey:              OptFieldKey, Data: OptFieldValue}
+		OptKey:              OptFieldKey,
+		Data:                OptFieldValue}
 	reqBody, err := json.Marshal(req)
 	if err != nil {
 		return nil, err

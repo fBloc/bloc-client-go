@@ -1,4 +1,4 @@
-package log
+package bloc_client
 
 import (
 	"encoding/json"
@@ -41,7 +41,7 @@ func (logger *Logger) IsZero() bool {
 	return logger.name == ""
 }
 
-func New(name, server string) *Logger {
+func NewLogger(name, server string) *Logger {
 	serverUrl = server
 	l := &Logger{
 		name: name,

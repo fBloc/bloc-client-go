@@ -2,8 +2,6 @@ package bloc_client
 
 import (
 	"context"
-
-	"github.com/fBloc/bloc-client-go/internal/log"
 )
 
 type FunctionDeveloperImplementInterface interface {
@@ -12,7 +10,7 @@ type FunctionDeveloperImplementInterface interface {
 		Ipts,
 		chan HighReadableFunctionRunProgress,
 		chan *FunctionRunOpt,
-		*log.Logger,
+		*Logger,
 	)
 	IptConfig() Ipts
 	OptConfig() []*Opt

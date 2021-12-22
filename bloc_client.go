@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/fBloc/bloc-client-go/internal/conns/minio"
-	"github.com/fBloc/bloc-client-go/internal/log"
 	"github.com/fBloc/bloc-client-go/internal/mq"
 	"github.com/fBloc/bloc-client-go/internal/mq/rabbit"
 	"github.com/fBloc/bloc-client-go/internal/object_storage"
@@ -167,12 +166,11 @@ type BlocClient struct {
 	configBuilder  *ConfigBuilder
 	eventMQ        mq.MsgQueue
 	objectStorage  object_storage.ObjectStorage
-	logger         *log.Logger
 	sync.Mutex
 }
 
-func (bC *BlocClient) CreateFunctionRunLogger(funcRunRecordID string) *log.Logger {
-	return log.New(
+func (bC *BlocClient) CreateFunctionRunLogger(funcRunRecordID string) *Logger {
+	return NewLogger(
 		"func-run-record-"+funcRunRecordID,
 		bC.GenReqServerPath())
 }
