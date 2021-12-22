@@ -28,7 +28,7 @@ type HttpRespFunction struct {
 type RegisterFuncResp struct {
 	StatusCode int `json:"status_code"`
 	Data       struct {
-		GroupNameMapFuncNameMapFunc map[string][]*HttpRespFunction `json:"groupName_map_functionName_map_function"`
+		GroupNameMapFunctions map[string][]*HttpRespFunction `json:"groupName_map_functions"`
 	} `json:"data"`
 }
 
@@ -74,9 +74,9 @@ func (bC *BlocClient) RegisterFunctionsToServer() {
 
 	for _, funcGroup := range bC.FunctionGroups {
 		groupName := funcGroup.Name
-		respFuncGroup := resp.Data.GroupNameMapFuncNameMapFunc[groupName]
-		nameMapRespFunc := make(map[string]*HttpRespFunction, len(respFuncGroup))
-		for _, f := range respFuncGroup {
+		respFunctions := resp.Data.GroupNameMapFunctions[groupName]
+		nameMapRespFunc := make(map[string]*HttpRespFunction, len(respFunctions))
+		for _, f := range respFunctions {
 			if f.ErrorMsg != "" {
 				panic(f.ErrorMsg)
 			}
