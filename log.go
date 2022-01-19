@@ -23,14 +23,15 @@ const (
 )
 
 type msg struct {
-	Level LogLevel  `json:"level"`
-	Data  string    `json:"data"`
-	Time  time.Time `json:"time"`
+	Level  LogLevel          `json:"level"`
+	TagMap map[string]string `json:"tag_map"`
+	Data   string            `json:"data"`
+	Time   time.Time         `json:"time"`
 }
 
 type Logger struct {
-	name string
-	data []*msg
+	name                string
+	functionRunRecordID string
 	sync.Mutex
 }
 
@@ -41,57 +42,58 @@ func (logger *Logger) IsZero() bool {
 	return logger.name == ""
 }
 
-func NewLogger(name, server string) *Logger {
+func NewLogger(name, server, functionRunRecordID string) *Logger {
 	serverUrl = server
 	l := &Logger{
-		name: name,
-	}
-	go l.upload()
+		name:                name,
+		functionRunRecordID: functionRunRecordID}
 	return l
 }
 
 func (
 	logger *Logger,
-) Infof(format string, a ...interface{}) {
-	logger.Lock()
-	defer logger.Unlock()
-
-	logger.data = append(logger.data, &msg{
+) Infof(
+	format string, a ...interface{},
+) {
+	go uploadMsg(&msg{
 		Time:  time.Now(),
 		Level: Info,
 		Data:  fmt.Sprintf(format, a...),
+		TagMap: map[string]string{
+			"function_run_record_id": logger.functionRunRecordID},
 	})
 }
 
 func (
 	logger *Logger,
-) Warningf(format string, a ...interface{}) {
-	logger.Lock()
-	defer logger.Unlock()
-
-	logger.data = append(logger.data, &msg{
+) Warningf(
+	format string, a ...interface{},
+) {
+	go uploadMsg(&msg{
 		Time:  time.Now(),
 		Level: Warning,
 		Data:  fmt.Sprintf(format, a...),
+		TagMap: map[string]string{
+			"function_run_record_id": logger.functionRunRecordID},
 	})
 }
 
 func (
 	logger *Logger,
-) Errorf(format string, a ...interface{}) {
-	logger.Lock()
-	defer logger.Unlock()
-
-	logger.data = append(logger.data, &msg{
+) Errorf(
+	format string, a ...interface{},
+) {
+	go uploadMsg(&msg{
 		Time:  time.Now(),
 		Level: Error,
 		Data:  fmt.Sprintf(format, a...),
+		TagMap: map[string]string{
+			"function_run_record_id": logger.functionRunRecordID},
 	})
 }
 
 type HttpReq struct {
-	Name    string `json:"name"`
-	LogData []*msg `json:"log_data"`
+	LogData []*msg `json:"logs"`
 }
 
 type HttpResp struct {
@@ -100,60 +102,16 @@ type HttpResp struct {
 	Data interface{} `json:"data"`
 }
 
-func (logger *Logger) ForceUpload() {
-	if len(logger.data) <= 0 {
-		return
-	}
-
-	// TODO 要不要panic？
-	logger.Lock()
-	httpReqData := HttpReq{
-		Name:    logger.name,
-		LogData: logger.data,
-	}
+func uploadMsg(logMsg *msg) {
+	httpReqData := HttpReq{LogData: []*msg{logMsg}}
 	httpReqByte, err := json.Marshal(httpReqData)
-	logger.data = logger.data[:0]
-	logger.Unlock()
-	if err != nil {
-		panic(err)
-	}
 
 	var resp HttpResp
 	err = http_util.PostJson(
-		path.Join(serverUrl, logSubPath), http_util.BlankHeader,
+		path.Join(serverUrl, logSubPath),
+		http_util.BlankHeader,
 		httpReqByte, &resp)
 	if err != nil {
 		panic(err)
-	}
-}
-
-func (logger *Logger) upload() {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		if len(logger.data) <= 0 {
-			continue
-		}
-
-		logger.Lock()
-		httpReqData := HttpReq{
-			Name:    logger.name,
-			LogData: logger.data,
-		}
-		httpReqByte, err := json.Marshal(httpReqData)
-		logger.data = logger.data[:0]
-		logger.Unlock()
-		if err != nil {
-			panic(err)
-		}
-
-		var resp HttpResp
-		err = http_util.PostJson(
-			path.Join(serverUrl, logSubPath), http_util.BlankHeader,
-			httpReqByte, &resp)
-		if err != nil {
-			panic(err)
-		}
 	}
 }

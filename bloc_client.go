@@ -169,10 +169,12 @@ type BlocClient struct {
 	sync.Mutex
 }
 
-func (bC *BlocClient) CreateFunctionRunLogger(funcRunRecordID string) *Logger {
+func (bC *BlocClient) CreateFunctionRunLogger(
+	funcRunRecordID string,
+) *Logger {
 	return NewLogger(
-		"func-run-record-"+funcRunRecordID,
-		bC.GenReqServerPath())
+		"func-run-record",
+		bC.GenReqServerPath(), funcRunRecordID)
 }
 
 // GetConfigBuilder
@@ -181,7 +183,9 @@ func (bloc *BlocClient) GetConfigBuilder() *ConfigBuilder {
 	return bloc.configBuilder
 }
 
-func (bloc *BlocClient) RegisterFunctionGroup(name string) *FunctionGroup {
+func (bloc *BlocClient) RegisterFunctionGroup(
+	name string,
+) *FunctionGroup {
 	for _, i := range bloc.FunctionGroups {
 		if i.Name == name {
 			panic("should not register same name group")
@@ -201,7 +205,8 @@ func (bC *BlocClient) GetOrCreateEventMQ() mq.MsgQueue {
 		return bC.eventMQ
 	}
 
-	rabbitMQ := rabbit.InitChannel((*rabbit.RabbitConfig)(bC.configBuilder.RabbitConf))
+	rabbitMQ := rabbit.InitChannel(
+		(*rabbit.RabbitConfig)(bC.configBuilder.RabbitConf))
 	bC.eventMQ = rabbitMQ
 
 	return bC.eventMQ
@@ -237,7 +242,9 @@ func (bC *BlocClient) GetOrCreateObjectStorage() object_storage.ObjectStorage {
 }
 
 func (bC *BlocClient) GenReqServerPath(subPaths ...string) string {
-	resp := path.Join(bC.configBuilder.ServerConf.String(), serverBasicPathPrefix)
+	resp := path.Join(
+		bC.configBuilder.ServerConf.String(),
+		serverBasicPathPrefix)
 	for _, subPath := range subPaths {
 		resp = path.Join(resp, subPath)
 	}

@@ -134,9 +134,7 @@ func (bC *BlocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 		// report finished
 		err = bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
 		if err != nil {
-			logger.Errorf("report function run finished failed: %")
+			logger.Errorf("report function run finished failed: %+v", err)
 		}
-		// finished run
-		logger.ForceUpload()
 	}
 }
