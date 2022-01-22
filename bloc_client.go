@@ -34,8 +34,7 @@ func (bSC *BlocServerConfig) String() string {
 type RabbitConfig struct {
 	User     string
 	Password string
-	Host     string
-	Port     int
+	Host     []string
 	Vhost    string
 }
 
@@ -43,8 +42,9 @@ func (rC *RabbitConfig) IsNil() bool {
 	if rC == nil {
 		return true
 	}
-	return rC.Host == "" || rC.Port == 0 ||
-		rC.User == "" || rC.Password == ""
+	return len(rC.Host) <= 0 ||
+		rC.User == "" ||
+		rC.Password == ""
 }
 
 type MinioConfig struct {
@@ -74,13 +74,12 @@ func (confbder *ConfigBuilder) SetServer(ip string, port int) *ConfigBuilder {
 }
 
 func (confbder *ConfigBuilder) SetRabbitConfig(
-	user, password, host string, port int, vHost string,
+	user, password string, host []string, vHost string,
 ) *ConfigBuilder {
 	confbder.RabbitConf = &RabbitConfig{
 		User:     user,
 		Password: password,
 		Host:     host,
-		Port:     port,
 		Vhost:    vHost}
 	return confbder
 }

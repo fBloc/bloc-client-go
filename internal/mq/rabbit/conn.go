@@ -1,11 +1,11 @@
 package rabbit
 
 import (
+	"fmt"
 	"log"
-	"strconv"
-	"strings"
 
 	"github.com/fBloc/bloc-client-go/internal/mq"
+	"github.com/sirius1024/go-amqp-reconnect/rabbitmq"
 
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
@@ -18,14 +18,13 @@ func init() {
 const topicExchangeName = "bloc_topic_exchange"
 
 type RabbitMQ struct {
-	channel *amqp.Channel
+	channel *rabbitmq.Channel
 }
 
 type RabbitConfig struct {
 	User     string
 	Password string
-	Host     string
-	Port     int
+	Host     []string
 	Vhost    string
 }
 
@@ -33,8 +32,9 @@ func (rC *RabbitConfig) IsNil() bool {
 	if rC == nil {
 		return true
 	}
-	return rC.Host == "" || rC.Port == 0 ||
-		rC.User == "" || rC.Password == ""
+	return len(rC.Host) <= 0 ||
+		rC.User == "" ||
+		rC.Password == ""
 }
 
 func failOnError(err error, msg string) {
@@ -44,14 +44,24 @@ func failOnError(err error, msg string) {
 }
 
 func InitChannel(conf *RabbitConfig) *RabbitMQ {
-	conStr := strings.Join([]string{
-		"amqp://",
-		conf.User, ":",
-		conf.Password, "@",
-		conf.Host, ":",
-		strconv.Itoa(conf.Port), "/",
-		conf.Vhost}, "")
-	connection, err := amqp.Dial(conStr)
+	var connection *rabbitmq.Connection
+	var err error
+	if len(conf.Host) > 1 { // cluster
+		conStrs := make([]string, len(conf.Host))
+		for _, i := range conf.Host {
+			conStrs = append(
+				conStrs,
+				fmt.Sprintf(
+					"amqp://%s:%s@%s/%s",
+					conf.User, conf.Password, i, conf.Vhost))
+		}
+		connection, err = rabbitmq.DialCluster(conStrs)
+	} else {
+		connection, err = rabbitmq.Dial(
+			fmt.Sprintf(
+				"amqp://%s:%s@%s/%s",
+				conf.User, conf.Password, conf.Host[0], conf.Vhost))
+	}
 	failOnError(err, "Failed to connect to RabbitMQ")
 
 	channel, err := connection.Channel()
