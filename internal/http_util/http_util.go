@@ -68,10 +68,12 @@ func post(remoteUrl string, headers map[string]string, bodyByte []byte) ([]byte,
 	}
 
 	resp, err := httpClient.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return []byte{}, err
 	}
-	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)
 }
 
