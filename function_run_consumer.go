@@ -57,7 +57,7 @@ func (bC *BlocClient) FunctionRunConsumer() {
 				// TODO 触发上报已超时、不运行
 				continue
 			} else { // 未超时
-				timer := time.After(funcRunRecordIns.ShouldBeCanceledAt.Sub(time.Now()))
+				timer := time.After(time.Until(funcRunRecordIns.ShouldBeCanceledAt))
 				go func() {
 					for range timer {
 						timeOutChan <- struct{}{}
@@ -84,7 +84,7 @@ func (bC *BlocClient) FunctionRunConsumer() {
 			select {
 			// 1. 超时
 			case <-timeOutChan:
-				logger.Infof("function run timeout canceled", functionRunRecordIDStr)
+				logger.Infof("function run timeout canceled. function_run_record_id: %s", functionRunRecordIDStr)
 				funcRunOpt = &FunctionRunOpt{
 					Suc:             true,
 					TimeoutCanceled: true}

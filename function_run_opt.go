@@ -1,7 +1,5 @@
 package bloc_client
 
-import "sync"
-
 type FunctionRunOpt struct {
 	Suc                       bool
 	Canceled                  bool
@@ -12,7 +10,6 @@ type FunctionRunOpt struct {
 	Detail                    map[string]interface{}
 	KeyMapObjectStorageKey    map[string]string
 	Brief                     map[string]string
-	sync.Mutex
 }
 
 func CanceldBlocOpt() *FunctionRunOpt {
