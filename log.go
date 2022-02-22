@@ -105,17 +105,13 @@ type HttpResp struct {
 func uploadMsg(logMsg *msg) {
 	httpReqData := HttpReq{LogData: []*msg{logMsg}}
 	httpReqByte, err := json.Marshal(httpReqData)
-	// TODO there should not panic when error occurred
+	// log error would not do future handle as log is not crucial
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	var resp HttpResp
-	err = http_util.PostJson(
+	http_util.PostJson(
 		path.Join(serverUrl, logSubPath),
-		http_util.BlankHeader,
-		httpReqByte, &resp)
-	if err != nil {
-		panic(err)
-	}
+		http_util.BlankHeader, httpReqByte, &resp)
 }

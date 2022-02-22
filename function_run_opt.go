@@ -1,5 +1,7 @@
 package bloc_client
 
+import "fmt"
+
 type FunctionRunOpt struct {
 	Suc                       bool
 	Canceled                  bool
@@ -12,6 +14,17 @@ type FunctionRunOpt struct {
 	Brief                     map[string]string
 }
 
+func NewFailedFunctionRunOpt(format string, a ...interface{}) *FunctionRunOpt {
+	return &FunctionRunOpt{
+		Suc:      false,
+		ErrorMsg: fmt.Sprintf(format, a...)}
+}
+
 func CanceldBlocOpt() *FunctionRunOpt {
 	return &FunctionRunOpt{Canceled: true}
+}
+
+func NewTimeoutCanceldFunctionRunOpt() *FunctionRunOpt {
+	return &FunctionRunOpt{
+		TimeoutCanceled: true, Canceled: true, InterceptBelowFunctionRun: true}
 }

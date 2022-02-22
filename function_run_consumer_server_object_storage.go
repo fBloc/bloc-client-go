@@ -3,6 +3,7 @@ package bloc_client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/fBloc/bloc-client-go/internal/event"
@@ -20,40 +21,77 @@ func (bC *BlocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 
 	for functionToRunEvent := range funcToRunEventChan {
 		functionRunRecordIDStr := functionToRunEvent.Identity()
+		logger := bC.CreateFunctionRunLogger(functionRunRecordIDStr)
+
 		funcRunRecordIns, err := bC.GetFunctionRunRecordByID(functionRunRecordIDStr)
 		if err != nil {
-			// TODO
+			msg := fmt.Sprintf(
+				"get function_run_record_ins by id-%s failed. error: %v",
+				functionRunRecordIDStr, err)
+			logger.Errorf(msg)
+			funcRunOpt := NewFailedFunctionRunOpt(msg)
+			bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+			continue
 		}
-		logger := bC.CreateFunctionRunLogger(functionRunRecordIDStr)
 
 		// make sure you copied functionIns! donnot disrupt the oringin functionIns
 		functionIns := bC.GetFunctionByID(funcRunRecordIns.FunctionID)
 		if functionIns.IsNil() {
-			// TODO
+			msg := fmt.Sprintf(
+				"get function_ins by id-%s failed", funcRunRecordIns.FunctionID)
+			logger.Errorf(msg)
+			funcRunOpt := NewFailedFunctionRunOpt(msg)
+			bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+			continue
 		}
 
 		// 从brief中恢复出完整的ipt以供运行
+		completeIptSuc := true
 		for iptIndex, ipt := range funcRunRecordIns.IptBriefAndObjectStoragekey {
 			for componentIndex, componentBrief := range ipt {
 				dataByte, err := bC.FetchObjectStorageDataByKeyFromServer(componentBrief.ObjectStorageKey)
 				if err != nil {
-					// TODO
+					msg := fmt.Sprintf(
+						"get ipt value from objectStorage failed. iptIndex-%d, componentIndex-%d. componentBrief-%s. error: %v",
+						iptIndex, componentIndex, componentBrief, err)
+					logger.Errorf(msg)
+					funcRunOpt := NewFailedFunctionRunOpt(msg)
+					bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+					completeIptSuc = false
+					break
 				}
+
 				var data interface{}
 				err = json.Unmarshal(dataByte, &data)
 				if err != nil {
-					// TODO
+					msg := fmt.Sprintf(
+						"get ipt value from objectStorage suc, but json unmarshal it failed. iptIndex-%d, componentIndex-%d. componentBrief-%s. resp-string: %s. error: %v",
+						iptIndex, componentIndex, componentBrief, string(dataByte), err)
+					logger.Errorf(msg)
+					funcRunOpt := NewFailedFunctionRunOpt(msg)
+					bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+					completeIptSuc = false
+					break
 				}
 
 				functionIns.Ipts[iptIndex].Components[componentIndex].Value = data
 			}
+		}
+		if !completeIptSuc {
+			continue
 		}
 
 		// 超时检测
 		timeOutChan := make(chan struct{})
 		if !funcRunRecordIns.ShouldBeCanceledAt.IsZero() { // 设置了整体运行的超时时长
 			if funcRunRecordIns.ShouldBeCanceledAt.Before(time.Now()) { // 已超时
-				// TODO 触发上报已超时、不运行
+				msg := fmt.Sprintf(
+					"already timeout. timeout time is: %s, now is: %s",
+					funcRunRecordIns.ShouldBeCanceledAt.Format(time.RFC3339),
+					time.Now().Format(time.RFC3339))
+				logger.Errorf(msg)
+				funcRunOpt := NewTimeoutCanceldFunctionRunOpt()
+				bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
 				continue
 			} else { // 未超时
 				timer := time.After(time.Until(funcRunRecordIns.ShouldBeCanceledAt))
