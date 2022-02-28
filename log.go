@@ -31,6 +31,7 @@ type msg struct {
 
 type Logger struct {
 	name                string
+	traceID             string
 	functionRunRecordID string
 	sync.Mutex
 }
@@ -42,6 +43,12 @@ func (logger *Logger) IsZero() bool {
 	return logger.name == ""
 }
 
+func (logger *Logger) SetTraceID(
+	traceID string,
+) {
+	logger.traceID = traceID
+}
+
 func NewLogger(name, server, functionRunRecordID string) *Logger {
 	serverUrl = server
 	l := &Logger{
@@ -50,46 +57,22 @@ func NewLogger(name, server, functionRunRecordID string) *Logger {
 	return l
 }
 
-func (
-	logger *Logger,
-) Infof(
+func (logger *Logger) Infof(
 	format string, a ...interface{},
 ) {
-	go uploadMsg(&msg{
-		Time:  time.Now(),
-		Level: Info,
-		Data:  fmt.Sprintf(format, a...),
-		TagMap: map[string]string{
-			"function_run_record_id": logger.functionRunRecordID},
-	})
+	go logger.uploadMsg(Info, fmt.Sprintf(format, a...))
 }
 
-func (
-	logger *Logger,
-) Warningf(
+func (logger *Logger) Warningf(
 	format string, a ...interface{},
 ) {
-	go uploadMsg(&msg{
-		Time:  time.Now(),
-		Level: Warning,
-		Data:  fmt.Sprintf(format, a...),
-		TagMap: map[string]string{
-			"function_run_record_id": logger.functionRunRecordID},
-	})
+	go logger.uploadMsg(Warning, fmt.Sprintf(format, a...))
 }
 
-func (
-	logger *Logger,
-) Errorf(
+func (logger *Logger) Errorf(
 	format string, a ...interface{},
 ) {
-	go uploadMsg(&msg{
-		Time:  time.Now(),
-		Level: Error,
-		Data:  fmt.Sprintf(format, a...),
-		TagMap: map[string]string{
-			"function_run_record_id": logger.functionRunRecordID},
-	})
+	go logger.uploadMsg(Error, fmt.Sprintf(format, a...))
 }
 
 type HttpReq struct {
@@ -102,7 +85,21 @@ type HttpResp struct {
 	Data interface{} `json:"data"`
 }
 
-func uploadMsg(logMsg *msg) {
+func (
+	logger *Logger,
+) uploadMsg(
+	level LogLevel,
+	data string,
+) {
+	logMsg := &msg{
+		Time:  time.Now(),
+		Level: level,
+		Data:  data,
+		TagMap: map[string]string{
+			"function_run_record_id": logger.functionRunRecordID,
+		},
+	}
+
 	httpReqData := HttpReq{LogData: []*msg{logMsg}}
 	httpReqByte, err := json.Marshal(httpReqData)
 	// log error would not do future handle as log is not crucial
@@ -110,8 +107,13 @@ func uploadMsg(logMsg *msg) {
 		return
 	}
 
+	header := make(map[string]string)
+	if logger.traceID != "" {
+		header["trace_id"] = logger.traceID
+	}
+
 	var resp HttpResp
 	http_util.PostJson(
 		path.Join(serverUrl, logSubPath),
-		http_util.BlankHeader, httpReqByte, &resp)
+		header, httpReqByte, &resp)
 }

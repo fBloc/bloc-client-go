@@ -1,6 +1,7 @@
 package bloc_client
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/fBloc/bloc-client-go/internal/http_util"
@@ -20,6 +21,7 @@ type progressReportHttpReq struct {
 }
 
 func (bC *BlocClient) ReportFuncRunProgress(
+	ctx context.Context,
 	funcRunRecordID string,
 	progress float32, msg string, index int,
 ) error {
@@ -49,9 +51,10 @@ func (bC *BlocClient) ReportFuncRunProgress(
 	}
 
 	var resp interface{}
+	header := map[string]string{
+		string(TraceID): GetTraceIDFromContext(ctx)}
 	err = http_util.PostJson(
 		bC.configBuilder.ServerConf.String()+FuncRunProgressReportPath,
-		http_util.BlankHeader, body,
-		&resp)
+		header, body, &resp)
 	return err
 }

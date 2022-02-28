@@ -1,6 +1,7 @@
 package bloc_client
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/fBloc/bloc-client-go/internal/http_util"
@@ -36,6 +37,7 @@ func newFuncRunFinishedHttpReqFromFuncOpt(
 }
 
 func (bC *BlocClient) ReportFuncRunFinished(
+	ctx context.Context,
 	functionRunRecordID string, opt FunctionRunOpt,
 ) error {
 	funcRunFinishedReq := newFuncRunFinishedHttpReqFromFuncOpt(
@@ -46,9 +48,10 @@ func (bC *BlocClient) ReportFuncRunFinished(
 	}
 
 	var resp interface{}
+	header := map[string]string{
+		string(TraceID): GetTraceIDFromContext(ctx)}
 	err = http_util.PostJson(
 		bC.GenReqServerPath(FuncRunFinishedHttpPath),
-		http_util.BlankHeader, body,
-		&resp)
+		header, body, &resp)
 	return err
 }

@@ -31,10 +31,11 @@ func (bC *BlocClient) FunctionRunConsumer() {
 				functionRunRecordIDStr, err)
 			logger.Errorf(msg)
 			funcRunOpt := NewFailedFunctionRunOpt(msg)
-			bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+			bC.ReportFuncRunFinished(context.TODO(), functionRunRecordIDStr, *funcRunOpt)
 			continue
 		}
 
+		traceCtx := SetTraceIDToContext(funcRunRecordIns.TraceID)
 		// make sure you copied functionIns! donnot disrupt the oringin functionIns
 		functionIns := bC.GetFunctionByID(funcRunRecordIns.FunctionID)
 		if functionIns.IsNil() {
@@ -42,7 +43,7 @@ func (bC *BlocClient) FunctionRunConsumer() {
 				"get function_ins by id-%s failed", funcRunRecordIns.FunctionID)
 			logger.Errorf(msg)
 			funcRunOpt := NewFailedFunctionRunOpt(msg)
-			bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+			bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 			continue
 		}
 
@@ -60,7 +61,7 @@ func (bC *BlocClient) FunctionRunConsumer() {
 						iptIndex, componentIndex, componentBrief, err)
 					logger.Errorf(msg)
 					funcRunOpt := NewFailedFunctionRunOpt(msg)
-					bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+					bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 					completeIptSuc = false
 					break
 				}
@@ -73,7 +74,7 @@ func (bC *BlocClient) FunctionRunConsumer() {
 						iptIndex, componentIndex, componentBrief, string(dataByte), err)
 					logger.Errorf(msg)
 					funcRunOpt := NewFailedFunctionRunOpt(msg)
-					bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+					bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 					completeIptSuc = false
 					break
 				}
@@ -95,7 +96,7 @@ func (bC *BlocClient) FunctionRunConsumer() {
 					time.Now().Format(time.RFC3339))
 				logger.Errorf(msg)
 				funcRunOpt := NewTimeoutCanceldFunctionRunOpt()
-				bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+				bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 				continue
 			} else { // 未超时
 				timer := time.After(time.Until(funcRunRecordIns.ShouldBeCanceledAt))
@@ -143,6 +144,7 @@ func (bC *BlocClient) FunctionRunConsumer() {
 			// 3. function运行进度上报
 			case runningStatus := <-progressReportChan:
 				bC.ReportFuncRunProgress(
+					traceCtx,
 					functionRunRecordIDStr,
 					runningStatus.Progress,
 					runningStatus.Msg,
@@ -182,7 +184,7 @@ func (bC *BlocClient) FunctionRunConsumer() {
 		}
 
 		// report finished
-		err = bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+		err = bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 		if err != nil {
 			logger.Errorf("report function run finished failed: %+v", err)
 		}

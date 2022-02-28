@@ -14,6 +14,7 @@ type FunctionRunRecord struct {
 	ID                          string          `json:"id"`
 	FunctionID                  string          `json:"function_id"`
 	FlowRunRecordID             string          `json:"flow_run_record_id"`
+	TraceID                     string          `json:"trace_id"`
 	IptBriefAndObjectStoragekey [][]briefAndKey `json:"ipt"`
 	Canceled                    bool            `json:"canceled"`
 	ShouldBeCanceledAt          time.Time       `json:"should_be_canceled_at"`

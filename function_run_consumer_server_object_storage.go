@@ -30,10 +30,13 @@ func (bC *BlocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 				functionRunRecordIDStr, err)
 			logger.Errorf(msg)
 			funcRunOpt := NewFailedFunctionRunOpt(msg)
-			bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+			bC.ReportFuncRunFinished(context.TODO(), functionRunRecordIDStr, *funcRunOpt)
 			continue
 		}
+		logger.Infof("set trace_id: %s", funcRunRecordIns.TraceID)
+		logger.SetTraceID(funcRunRecordIns.TraceID)
 
+		traceCtx := SetTraceIDToContext(funcRunRecordIns.TraceID)
 		// make sure you copied functionIns! donnot disrupt the oringin functionIns
 		functionIns := bC.GetFunctionByID(funcRunRecordIns.FunctionID)
 		if functionIns.IsNil() {
@@ -41,7 +44,7 @@ func (bC *BlocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 				"get function_ins by id-%s failed", funcRunRecordIns.FunctionID)
 			logger.Errorf(msg)
 			funcRunOpt := NewFailedFunctionRunOpt(msg)
-			bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+			bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 			continue
 		}
 
@@ -56,7 +59,7 @@ func (bC *BlocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 						iptIndex, componentIndex, componentBrief, err)
 					logger.Errorf(msg)
 					funcRunOpt := NewFailedFunctionRunOpt(msg)
-					bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+					bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 					completeIptSuc = false
 					break
 				}
@@ -69,7 +72,7 @@ func (bC *BlocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 						iptIndex, componentIndex, componentBrief, string(dataByte), err)
 					logger.Errorf(msg)
 					funcRunOpt := NewFailedFunctionRunOpt(msg)
-					bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+					bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 					completeIptSuc = false
 					break
 				}
@@ -91,7 +94,7 @@ func (bC *BlocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 					time.Now().Format(time.RFC3339))
 				logger.Errorf(msg)
 				funcRunOpt := NewTimeoutCanceldFunctionRunOpt()
-				bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+				bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 				continue
 			} else { // 未超时
 				timer := time.After(time.Until(funcRunRecordIns.ShouldBeCanceledAt))
@@ -139,10 +142,9 @@ func (bC *BlocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 			// 3. function运行进度上报
 			case runningStatus := <-progressReportChan:
 				bC.ReportFuncRunProgress(
-					functionRunRecordIDStr,
-					runningStatus.Progress,
-					runningStatus.Msg,
-					runningStatus.ProcessStageIndex)
+					traceCtx,
+					functionRunRecordIDStr, runningStatus.Progress,
+					runningStatus.Msg, runningStatus.ProcessStageIndex)
 			// 4. 运行成功完成
 			case funcRunOpt = <-functionRunOptChan:
 				logger.Infof("function run suc")
@@ -170,9 +172,11 @@ func (bC *BlocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 		}
 
 		// report finished
-		err = bC.ReportFuncRunFinished(functionRunRecordIDStr, *funcRunOpt)
+		err = bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 		if err != nil {
 			logger.Errorf("report function run finished failed: %+v", err)
+		} else {
+			logger.Infof("report function run finished suc")
 		}
 	}
 }
