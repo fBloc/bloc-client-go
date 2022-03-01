@@ -80,6 +80,11 @@ func post(remoteUrl string, headers map[string]string, bodyByte []byte) ([]byte,
 func PostJson(
 	remoteUrl string, headers map[string]string,
 	bodyByte []byte, respIns interface{}) error {
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+	headers["content-type"] = "application/json"
+
 	respBodyByte, err := post(remoteUrl, headers, bodyByte)
 	if err != nil {
 		return err

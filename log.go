@@ -32,6 +32,7 @@ type msg struct {
 type Logger struct {
 	name                string
 	traceID             string
+	spanID              string
 	functionRunRecordID string
 	sync.Mutex
 }
@@ -43,10 +44,11 @@ func (logger *Logger) IsZero() bool {
 	return logger.name == ""
 }
 
-func (logger *Logger) SetTraceID(
-	traceID string,
+func (logger *Logger) SetTraceIDAndSpanID(
+	traceID, spanID string,
 ) {
 	logger.traceID = traceID
+	logger.spanID = spanID
 }
 
 func NewLogger(name, server, functionRunRecordID string) *Logger {
@@ -107,11 +109,9 @@ func (
 		return
 	}
 
-	header := make(map[string]string)
-	if logger.traceID != "" {
-		header["trace_id"] = logger.traceID
-	}
-
+	header := map[string]string{
+		string(TraceID): logger.traceID,
+		string(SpanID):  logger.spanID}
 	var resp HttpResp
 	http_util.PostJson(
 		path.Join(serverUrl, logSubPath),

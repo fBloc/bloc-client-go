@@ -35,7 +35,11 @@ func (bC *BlocClient) FunctionRunConsumer() {
 			continue
 		}
 
-		traceCtx := SetTraceIDToContext(funcRunRecordIns.TraceID)
+		spanID := NewSpanID()
+		logger.SetTraceIDAndSpanID(funcRunRecordIns.TraceID, spanID)
+		logger.Infof("set trace_id: %s, spanID: %s", funcRunRecordIns.TraceID, spanID)
+
+		traceCtx := SetTraceIDAndSpanIDToContext(funcRunRecordIns.TraceID, spanID)
 		// make sure you copied functionIns! donnot disrupt the oringin functionIns
 		functionIns := bC.GetFunctionByID(funcRunRecordIns.FunctionID)
 		if functionIns.IsNil() {
@@ -187,6 +191,8 @@ func (bC *BlocClient) FunctionRunConsumer() {
 		err = bC.ReportFuncRunFinished(traceCtx, functionRunRecordIDStr, *funcRunOpt)
 		if err != nil {
 			logger.Errorf("report function run finished failed: %+v", err)
+		} else {
+			logger.Infof("report function run finished suc")
 		}
 	}
 }

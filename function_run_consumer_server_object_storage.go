@@ -33,10 +33,12 @@ func (bC *BlocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 			bC.ReportFuncRunFinished(context.TODO(), functionRunRecordIDStr, *funcRunOpt)
 			continue
 		}
-		logger.Infof("set trace_id: %s", funcRunRecordIns.TraceID)
-		logger.SetTraceID(funcRunRecordIns.TraceID)
 
-		traceCtx := SetTraceIDToContext(funcRunRecordIns.TraceID)
+		spanID := NewSpanID()
+		logger.SetTraceIDAndSpanID(funcRunRecordIns.TraceID, spanID)
+		logger.Infof("set trace_id: %s, spanID: %s", funcRunRecordIns.TraceID, spanID)
+
+		traceCtx := SetTraceIDAndSpanIDToContext(funcRunRecordIns.TraceID, spanID)
 		// make sure you copied functionIns! donnot disrupt the oringin functionIns
 		functionIns := bC.GetFunctionByID(funcRunRecordIns.FunctionID)
 		if functionIns.IsNil() {

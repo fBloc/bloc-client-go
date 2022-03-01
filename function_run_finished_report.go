@@ -49,7 +49,8 @@ func (bC *BlocClient) ReportFuncRunFinished(
 
 	var resp interface{}
 	header := map[string]string{
-		string(TraceID): GetTraceIDFromContext(ctx)}
+		string(TraceID): GetTraceIDFromContext(ctx),
+		string(SpanID):  GetSpanIDFromContext(ctx)}
 	err = http_util.PostJson(
 		bC.GenReqServerPath(FuncRunFinishedHttpPath),
 		header, body, &resp)
