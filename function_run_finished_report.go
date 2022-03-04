@@ -36,7 +36,7 @@ func newFuncRunFinishedHttpReqFromFuncOpt(
 	}
 }
 
-func (bC *BlocClient) ReportFuncRunFinished(
+func (bC *blocClient) ReportFuncRunFinished(
 	ctx context.Context,
 	functionRunRecordID string, opt FunctionRunOpt,
 ) error {

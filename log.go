@@ -3,6 +3,7 @@ package bloc_client
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"path"
 	"sync"
 	"time"
@@ -34,6 +35,7 @@ type Logger struct {
 	traceID             string
 	spanID              string
 	functionRunRecordID string
+	isMock              bool
 	sync.Mutex
 }
 
@@ -56,6 +58,11 @@ func NewLogger(name, server, functionRunRecordID string) *Logger {
 	l := &Logger{
 		name:                name,
 		functionRunRecordID: functionRunRecordID}
+	return l
+}
+
+func newMockLogger() *Logger {
+	l := &Logger{isMock: true}
 	return l
 }
 
@@ -93,6 +100,10 @@ func (
 	level LogLevel,
 	data string,
 ) {
+	if logger.isMock {
+		log.Printf("%s %s", level, data)
+		return
+	}
 	logMsg := &msg{
 		Time:  time.Now(),
 		Level: level,

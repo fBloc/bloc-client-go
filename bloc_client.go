@@ -1,7 +1,9 @@
 package bloc_client
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"path"
 	"strings"
 	"sync"
@@ -159,7 +161,7 @@ func (functionGroup *FunctionGroup) AddFunction(
 	functionGroup.Functions = append(functionGroup.Functions, &aggFunction)
 }
 
-type BlocClient struct {
+type blocClient struct {
 	Name           string
 	FunctionGroups []*FunctionGroup
 	configBuilder  *ConfigBuilder
@@ -168,7 +170,13 @@ type BlocClient struct {
 	sync.Mutex
 }
 
-func (bC *BlocClient) CreateFunctionRunLogger(
+func NewClient(clientName string) *blocClient {
+	return &blocClient{
+		Name: clientName,
+	}
+}
+
+func (bC *blocClient) CreateFunctionRunLogger(
 	funcRunRecordID string,
 ) *Logger {
 	return NewLogger(
@@ -177,12 +185,12 @@ func (bC *BlocClient) CreateFunctionRunLogger(
 }
 
 // GetConfigBuilder
-func (bloc *BlocClient) GetConfigBuilder() *ConfigBuilder {
+func (bloc *blocClient) GetConfigBuilder() *ConfigBuilder {
 	bloc.configBuilder = &ConfigBuilder{}
 	return bloc.configBuilder
 }
 
-func (bloc *BlocClient) RegisterFunctionGroup(
+func (bloc *blocClient) RegisterFunctionGroup(
 	name string,
 ) *FunctionGroup {
 	for _, i := range bloc.FunctionGroups {
@@ -197,7 +205,7 @@ func (bloc *BlocClient) RegisterFunctionGroup(
 	return &functionGroup
 }
 
-func (bC *BlocClient) GetOrCreateEventMQ() mq.MsgQueue {
+func (bC *blocClient) GetOrCreateEventMQ() mq.MsgQueue {
 	bC.Lock()
 	defer bC.Unlock()
 	if bC.eventMQ != nil {
@@ -211,7 +219,7 @@ func (bC *BlocClient) GetOrCreateEventMQ() mq.MsgQueue {
 	return bC.eventMQ
 }
 
-func (bC *BlocClient) GetFunctionByID(functionID string) Function {
+func (bC *blocClient) GetFunctionByID(functionID string) Function {
 	for _, fGroup := range bC.FunctionGroups {
 		for _, f := range fGroup.Functions {
 			if f.ID == functionID {
@@ -222,7 +230,7 @@ func (bC *BlocClient) GetFunctionByID(functionID string) Function {
 	return Function{}
 }
 
-func (bC *BlocClient) GetOrCreateObjectStorage() object_storage.ObjectStorage {
+func (bC *blocClient) GetOrCreateObjectStorage() object_storage.ObjectStorage {
 	if bC.objectStorage != nil {
 		return bC.objectStorage
 	}
@@ -240,7 +248,7 @@ func (bC *BlocClient) GetOrCreateObjectStorage() object_storage.ObjectStorage {
 	return bC.objectStorage
 }
 
-func (bC *BlocClient) GenReqServerPath(subPaths ...string) string {
+func (bC *blocClient) GenReqServerPath(subPaths ...string) string {
 	resp := path.Join(
 		bC.configBuilder.ServerConf.String(),
 		serverBasicPathPrefix)
@@ -248,4 +256,42 @@ func (bC *BlocClient) GenReqServerPath(subPaths ...string) string {
 		resp = path.Join(resp, subPath)
 	}
 	return resp
+}
+
+func (bC *blocClient) TestRunFunction(
+	userFunction FunctionDeveloperImplementInterface,
+	iptValues [][]interface{},
+) FunctionRunOpt {
+	progressReportChan := make(chan HighReadableFunctionRunProgress)
+	functionRunOptChan := make(chan *FunctionRunOpt)
+	logger := newMockLogger()
+
+	userFunctionIpts := userFunction.IptConfig()
+	for iptIndex, i := range userFunctionIpts {
+		if len(iptValues) <= iptIndex {
+			break
+		}
+		for componentIndex := range i.Components {
+			userFunctionIpts[iptIndex].Components[componentIndex].Value = iptValues[iptIndex][componentIndex]
+		}
+	}
+	go func() {
+		userFunction.Run(
+			context.TODO(),
+			userFunctionIpts,
+			progressReportChan,
+			functionRunOptChan,
+			logger)
+	}()
+	for {
+		select {
+		// function运行进度上报
+		case runningStatus := <-progressReportChan:
+			log.Printf("reporting progress: %v", runningStatus)
+		// 运行成功完成
+		case funcRunOpt := <-functionRunOptChan:
+			log.Printf("run finished with resp: %+v", funcRunOpt)
+			return *funcRunOpt
+		}
+	}
 }

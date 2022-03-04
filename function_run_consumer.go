@@ -9,7 +9,7 @@ import (
 	"github.com/fBloc/bloc-client-go/internal/event"
 )
 
-func (bC *BlocClient) FunctionRunConsumer() {
+func (bC *blocClient) FunctionRunConsumer() {
 	event.InjectMq(bC.GetOrCreateEventMQ())
 	objectStorage := bC.GetOrCreateObjectStorage()
 	funcToRunEventChan := make(chan event.DomainEvent)

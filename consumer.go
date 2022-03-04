@@ -4,10 +4,10 @@ import (
 	"time"
 )
 
-func (bC *BlocClient) Run() {
+func (bC *blocClient) Run() {
 	// periodicly register function
 	bC.RegisterFunctionsToServer()
-	go func(b *BlocClient) {
+	go func(b *blocClient) {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		for range ticker.C {

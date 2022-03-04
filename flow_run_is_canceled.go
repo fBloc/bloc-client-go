@@ -12,7 +12,7 @@ type FlowRunIsCanceledHttpResp struct {
 	Canceled bool `json:"canceled"`
 }
 
-func (bC *BlocClient) FlowRunIsCanceled(
+func (bC *blocClient) FlowRunIsCanceled(
 	flowRunRecordID string,
 ) (bool, error) {
 	var resp FlowRunIsCanceledHttpResp

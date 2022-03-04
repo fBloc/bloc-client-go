@@ -38,7 +38,7 @@ type RegisterFuncReq struct {
 }
 type GroupNameMapFunctions map[string][]*HttpReqFunction
 
-func (bC *BlocClient) RegisterFunctionsToServer() {
+func (bC *blocClient) RegisterFunctionsToServer() {
 	req := RegisterFuncReq{
 		Who:                   bC.Name,
 		GroupNameMapFunctions: make(map[string][]*HttpReqFunction)}

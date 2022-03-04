@@ -24,7 +24,7 @@ type FuncRunOptPersistToObjectStorageHttpResp struct {
 	Data       FuncOptFieldServerPersisResp `json:"data"`
 }
 
-func (bC *BlocClient) PersistFunctionRunOptFieldToServer(
+func (bC *blocClient) PersistFunctionRunOptFieldToServer(
 	funcRunRecordID string, OptFieldKey string,
 	OptFieldValue interface{},
 ) (*FuncOptFieldServerPersisResp, error) {

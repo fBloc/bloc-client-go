@@ -11,7 +11,7 @@ type ServerObjectStorageHttpResp struct {
 	Data       []byte `json:"data"`
 }
 
-func (bC *BlocClient) FetchObjectStorageDataByKeyFromServer(
+func (bC *blocClient) FetchObjectStorageDataByKeyFromServer(
 	key string,
 ) ([]byte, error) {
 	var resp ServerObjectStorageHttpResp

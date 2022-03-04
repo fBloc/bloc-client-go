@@ -27,7 +27,7 @@ type FuncRecordHttpResp struct {
 
 const functionRecordPath = "get_function_run_record_by_id"
 
-func (bC *BlocClient) GetFunctionRunRecordByID(
+func (bC *blocClient) GetFunctionRunRecordByID(
 	funcRunRecordID string,
 ) (*FunctionRunRecord, error) {
 	var resp FuncRecordHttpResp

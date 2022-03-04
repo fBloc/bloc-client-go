@@ -20,7 +20,7 @@ type progressReportHttpReq struct {
 	FuncRunProgress     HighReadableFunctionRunProgress `json:"high_readable_run_progress"`
 }
 
-func (bC *BlocClient) ReportFuncRunProgress(
+func (bC *blocClient) ReportFuncRunProgress(
 	ctx context.Context,
 	funcRunRecordID string,
 	progress float32, msg string, index int,
