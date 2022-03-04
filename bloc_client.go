@@ -268,13 +268,28 @@ func (bC *blocClient) TestRunFunction(
 
 	userFunctionIpts := userFunction.IptConfig()
 	for iptIndex, i := range userFunctionIpts {
-		if len(iptValues) <= iptIndex {
+		must := userFunctionIpts[iptIndex].Must
+		if must {
+			if len(iptValues)-1 < iptIndex {
+				panic(fmt.Sprintf(
+					"index %d is a cannot be nil ipt, but params has no this data",
+					iptIndex))
+			}
+			if len(iptValues[iptIndex]) < len(userFunctionIpts[iptIndex].Components) {
+				panic(
+					fmt.Sprintf("index %d need %d component value, ", iptIndex, len(userFunctionIpts[iptIndex].Components)) +
+						fmt.Sprintf("but param only provide %d value", len(iptValues[iptIndex])))
+			}
+		}
+
+		if iptIndex >= len(iptValues) {
 			break
 		}
 		for componentIndex := range i.Components {
 			userFunctionIpts[iptIndex].Components[componentIndex].Value = iptValues[iptIndex][componentIndex]
 		}
 	}
+
 	go func() {
 		userFunction.Run(
 			context.TODO(),
@@ -283,6 +298,7 @@ func (bC *blocClient) TestRunFunction(
 			functionRunOptChan,
 			logger)
 	}()
+
 	for {
 		select {
 		// function运行进度上报
