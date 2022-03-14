@@ -114,6 +114,7 @@ func (bC *blocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 		var funcRunOpt *FunctionRunOpt
 		ctx := context.Background()
 		ctx, cancelFunctionExecute := context.WithCancel(ctx)
+		heartBeatTicker := time.NewTicker(5 * time.Second)
 
 		// 开始运行
 		go func() {
@@ -124,6 +125,11 @@ func (bC *blocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 		}()
 		for {
 			select {
+			// 0. 存活心跳上报
+			case <-heartBeatTicker.C:
+				bC.ReportFuncExecuteHeartbeat(
+					traceCtx,
+					functionRunRecordIDStr)
 			// 1. 超时
 			case <-timeOutChan:
 				logger.Infof("function run timeout canceled. function_run_record_id: %s", functionRunRecordIDStr)
@@ -154,9 +160,11 @@ func (bC *blocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 			}
 		}
 	FunctionNodeRunFinished:
+		heartBeatTicker.Stop()
 		cancelFunctionExecute()
 		close(progressReportChan)
 		cancelCheckTimer.Stop()
+
 		// save opt
 		if funcRunOpt.Suc {
 			funcRunOpt.Brief = make(map[string]string, len(funcRunOpt.Detail))
