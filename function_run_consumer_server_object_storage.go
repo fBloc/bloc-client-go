@@ -116,28 +116,33 @@ func (bC *blocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 		ctx, cancelFunctionExecute := context.WithCancel(ctx)
 		heartBeatTicker := time.NewTicker(5 * time.Second)
 
-		// 开始运行
+		// before start function execute. send the first heartbeat!
+		bC.ReportFuncExecuteHeartbeat(traceCtx, functionRunRecordIDStr)
+
+		// run the function
 		go func() {
 			functionIns.ExeFunc.Run(
 				ctx, functionIns.Ipts,
 				progressReportChan, functionRunOptChan,
 				logger)
 		}()
+
+		// read the real-time msg & forward 2 server
 		for {
 			select {
-			// 0. 存活心跳上报
+			// 0. report heartbeat
 			case <-heartBeatTicker.C:
 				bC.ReportFuncExecuteHeartbeat(
 					traceCtx,
 					functionRunRecordIDStr)
-			// 1. 超时
+			// 1. timeout
 			case <-timeOutChan:
 				logger.Infof("function run timeout canceled. function_run_record_id: %s", functionRunRecordIDStr)
 				funcRunOpt = &FunctionRunOpt{
 					Suc:             true,
 					TimeoutCanceled: true}
 				goto FunctionNodeRunFinished
-			// 2. flow被用户在前端取消
+			// 2. flow is canceled
 			case <-cancelCheckTimer.C:
 				isCanceled, err := bC.FlowRunIsCanceled(funcRunRecordIns.FlowRunRecordID)
 				if err == nil && isCanceled {
@@ -147,13 +152,13 @@ func (bC *blocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 						Canceled: true}
 					goto FunctionNodeRunFinished
 				}
-			// 3. function运行进度上报
+			// 3. report run progress
 			case runningStatus := <-progressReportChan:
 				bC.ReportFuncRunProgress(
 					traceCtx,
 					functionRunRecordIDStr, runningStatus.Progress,
 					runningStatus.Msg, runningStatus.ProcessStageIndex)
-			// 4. 运行成功完成
+			// 4. finished!
 			case funcRunOpt = <-functionRunOptChan:
 				logger.Infof("function run suc")
 				goto FunctionNodeRunFinished
