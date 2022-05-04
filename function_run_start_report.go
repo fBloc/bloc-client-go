@@ -36,7 +36,7 @@ func (bC *blocClient) ReportFuncRunStart(
 		string(TraceID): GetTraceIDFromContext(ctx),
 		string(SpanID):  GetSpanIDFromContext(ctx)}
 	err = http_util.PostJson(
-		bC.GenReqServerPath(FuncRunFinishedHttpPath),
+		bC.GenReqServerPath(FuncRunStartHttpPath),
 		header, body, &resp)
 	return err
 }
