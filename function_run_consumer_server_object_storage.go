@@ -50,6 +50,12 @@ func (bC *blocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 			continue
 		}
 
+		// report function_run start
+		err = bC.ReportFuncRunStart(traceCtx, functionRunRecordIDStr)
+		if err != nil {
+			logger.Errorf("report function run start to server failed: %v", err)
+		}
+
 		// 从brief中恢复出完整的ipt以供运行
 		completeIptSuc := true
 		for iptIndex, ipt := range funcRunRecordIns.IptBriefAndObjectStoragekey {
