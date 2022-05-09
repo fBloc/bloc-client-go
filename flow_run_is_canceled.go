@@ -17,7 +17,7 @@ func (bC *blocClient) FlowRunIsCanceled(
 ) (bool, error) {
 	var resp FlowRunIsCanceledHttpResp
 	err := http_util.Get(
-		bC.configBuilder.ServerConf.String()+FlowRunIsCanceledPath+flowRunRecordID,
+		bC.GenReqServerPath(FlowRunIsCanceledPath, flowRunRecordID),
 		http_util.BlankHeader,
 		&resp)
 	if err != nil {

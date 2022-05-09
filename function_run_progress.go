@@ -55,7 +55,7 @@ func (bC *blocClient) ReportFuncRunProgress(
 		string(TraceID): GetTraceIDFromContext(ctx),
 		string(SpanID):  GetSpanIDFromContext(ctx)}
 	err = http_util.PostJson(
-		bC.configBuilder.ServerConf.String()+FuncRunProgressReportPath,
+		bC.GenReqServerPath(FuncRunProgressReportPath),
 		header, body, &resp)
 	return err
 }
