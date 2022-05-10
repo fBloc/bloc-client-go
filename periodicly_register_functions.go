@@ -9,13 +9,13 @@ import (
 const registerFuncPath = "register_functions"
 
 type HttpReqFunction struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	GroupName     string   `json:"group_name"`
-	Description   string   `json:"description"`
-	Ipts          []*Ipt   `json:"ipts"`
-	Opts          []*Opt   `json:"opts"`
-	ProcessStages []string `json:"process_stages"`
+	ID                 string   `json:"id"`
+	Name               string   `json:"name"`
+	GroupName          string   `json:"group_name"`
+	Description        string   `json:"description"`
+	Ipts               []*Ipt   `json:"ipts"`
+	Opts               []*Opt   `json:"opts"`
+	ProgressMilestones []string `json:"progress_milestones"`
 }
 
 type HttpRespFunction struct {
@@ -26,7 +26,8 @@ type HttpRespFunction struct {
 }
 
 type RegisterFuncResp struct {
-	StatusCode int `json:"status_code"`
+	StatusCode int    `json:"status_code"`
+	StatusMsg  string `json:"status_msg"`
 	Data       struct {
 		GroupNameMapFunctions map[string][]*HttpRespFunction `json:"groupName_map_functions"`
 	} `json:"data"`
@@ -49,12 +50,12 @@ func (bC *blocClient) RegisterFunctionsToServer() {
 			[]*HttpReqFunction, len(funcGroup.Functions))
 		for i, function := range funcGroup.Functions {
 			req.GroupNameMapFunctions[groupName][i] = &HttpReqFunction{
-				Name:          function.Name,
-				GroupName:     function.GroupName,
-				Description:   function.Description,
-				Ipts:          function.Ipts,
-				Opts:          function.Opts,
-				ProcessStages: function.ProcessStages,
+				Name:               function.Name,
+				GroupName:          function.GroupName,
+				Description:        function.Description,
+				Ipts:               function.Ipts,
+				Opts:               function.Opts,
+				ProgressMilestones: function.ProgressMilestones,
 			}
 		}
 	}

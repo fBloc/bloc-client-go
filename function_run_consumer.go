@@ -152,7 +152,7 @@ func (bC *blocClient) FunctionRunConsumer() {
 					functionRunRecordIDStr,
 					runningStatus.Progress,
 					runningStatus.Msg,
-					runningStatus.ProcessStageIndex)
+					runningStatus.ProgressMilestoneIndex)
 			// 4. 运行成功完成
 			case funcRunOpt = <-functionRunOptChan:
 				logger.Infof("function run suc")

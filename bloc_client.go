@@ -117,14 +117,14 @@ func (congbder *ConfigBuilder) BuildUp() {
 }
 
 type Function struct {
-	ID            string
-	Name          string
-	GroupName     string
-	Description   string
-	Ipts          Ipts
-	Opts          []*Opt
-	ProcessStages []string
-	ExeFunc       FunctionDeveloperImplementInterface
+	ID                 string
+	Name               string
+	GroupName          string
+	Description        string
+	Ipts               Ipts
+	Opts               []*Opt
+	ProgressMilestones []string
+	ExeFunc            FunctionDeveloperImplementInterface
 }
 
 func (f *Function) IsNil() bool {
@@ -150,13 +150,13 @@ func (functionGroup *FunctionGroup) AddFunction(
 	}
 
 	aggFunction := Function{
-		Name:          name,
-		GroupName:     functionGroup.Name,
-		Description:   description,
-		Ipts:          userImplementedFunc.IptConfig(),
-		Opts:          userImplementedFunc.OptConfig(),
-		ProcessStages: userImplementedFunc.AllProcessStages(),
-		ExeFunc:       userImplementedFunc}
+		Name:               name,
+		GroupName:          functionGroup.Name,
+		Description:        description,
+		Ipts:               userImplementedFunc.IptConfig(),
+		Opts:               userImplementedFunc.OptConfig(),
+		ProgressMilestones: userImplementedFunc.AllProgressMilestones(),
+		ExeFunc:            userImplementedFunc}
 
 	functionGroup.Functions = append(functionGroup.Functions, &aggFunction)
 }

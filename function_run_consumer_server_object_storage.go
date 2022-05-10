@@ -163,7 +163,7 @@ func (bC *blocClient) FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 				bC.ReportFuncRunProgress(
 					traceCtx,
 					functionRunRecordIDStr, runningStatus.Progress,
-					runningStatus.Msg, runningStatus.ProcessStageIndex)
+					runningStatus.Msg, runningStatus.ProgressMilestoneIndex)
 			// 4. finished!
 			case funcRunOpt = <-functionRunOptChan:
 				logger.Infof("function run suc")

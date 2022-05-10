@@ -16,11 +16,7 @@ func (bC *blocClient) Run() {
 	}(bC)
 
 	// function consumer
-	if bC.configBuilder.MinioConf.IsNil() {
-		go bC.FunctionRunConsumerWithoutLocalObjectStorageImplemention()
-	} else {
-		go bC.FunctionRunConsumer()
-	}
+	go bC.FunctionRunConsumerWithoutLocalObjectStorageImplemention()
 
 	forever := make(chan struct{})
 	<-forever

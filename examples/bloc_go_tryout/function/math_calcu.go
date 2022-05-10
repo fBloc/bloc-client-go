@@ -15,7 +15,7 @@ func init() {
 type MathCalcu struct {
 }
 
-func (*MathCalcu) AllProcessStages() []string {
+func (*MathCalcu) AllProgressMilestones() []string {
 	return []string{
 		"start parsing ipt",
 		"start do the calculation",
@@ -92,7 +92,7 @@ func (*MathCalcu) Run(
 	// logger.Infof("start")
 
 	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{
-		ProcessStageIndex: 0, // AllProcessStages() index 0 - "start parsing ipt". which also will be represented in the frontend immediately.
+		ProgressMilestoneIndex: 0, // AllProgressMilestones() index 0 - "start parsing ipt". which also will be represented in the frontend immediately.
 	}
 
 	numbersSlice, err := ipts.GetIntSliceValue(0, 0)
@@ -122,7 +122,7 @@ func (*MathCalcu) Run(
 		return
 	}
 
-	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{ProcessStageIndex: 1}
+	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{ProgressMilestoneIndex: 1}
 
 	ret := 0
 	switch operator {
@@ -158,7 +158,7 @@ func (*MathCalcu) Run(
 		}
 		return
 	}
-	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{ProcessStageIndex: 2}
+	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{ProgressMilestoneIndex: 2}
 
 	blocOptChan <- &bloc_client.FunctionRunOpt{
 		Suc:         true,

@@ -91,14 +91,14 @@ func (*MathCalcu) OptConfig() []*bloc_client.Opt {
 }
 ```
 
-4. implement AllProcessStages() which define the highly readable describe stages of the function node's run:
+4. implement AllProgressMilestones() which define the highly readable describe milestones of the function node's run:
 
-This is designed 4 long run function, during it is running, it can report it's current running stage for the user in frontend to get the information.
+This is designed 4 long run function, during it is running, it can report it's current running milestone for the user in frontend to get the information.
 
 If your function is quick run. maybe no need to set it and just return blank.
 
 ```go
-func (*MathCalcu) AllProcessStages() []string {
+func (*MathCalcu) AllProgressMilestones() []string {
 	return []string{
         "finished parsing ipt",
         "start do the calculation",
@@ -123,7 +123,7 @@ func (*MathCalcu) Run(
 	// logger.Infof("start")
 
 	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{
-		ProcessStageIndex: 0, // AllProcessStages() index 0 - "start parsing ipt". which also will be represented in the frontend immediately.
+		ProgressMilestoneIndex: 0, // AllProgressMilestones() index 0 - "start parsing ipt". which also will be represented in the frontend immediately.
 	}
 
 	numbersSlice, err := ipts.GetIntSliceValue(0, 0)
@@ -153,7 +153,7 @@ func (*MathCalcu) Run(
 		return
 	}
 
-	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{ProcessStageIndex: 1}
+	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{ProgressMilestoneIndex: 1}
 
 	ret := 0
 	switch operator {
@@ -189,7 +189,7 @@ func (*MathCalcu) Run(
 		}
 		return
 	}
-	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{ProcessStageIndex: 2}
+	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{ProgressMilestoneIndex: 2}
 
 	blocOptChan <- &bloc_client.FunctionRunOpt{
 		Suc:         true,

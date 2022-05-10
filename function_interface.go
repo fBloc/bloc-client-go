@@ -14,5 +14,5 @@ type FunctionDeveloperImplementInterface interface {
 	)
 	IptConfig() Ipts
 	OptConfig() []*Opt
-	AllProcessStages() []string
+	AllProgressMilestones() []string
 }
