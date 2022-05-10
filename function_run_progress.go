@@ -12,7 +12,7 @@ const FuncRunProgressReportPath = "/report_progress"
 type HighReadableFunctionRunProgress struct {
 	Progress               float32 `json:"progress"`
 	Msg                    string  `json:"msg"`
-	ProgressMilestoneIndex int     `json:"progress_milestone_index"`
+	ProgressMilestoneIndex *int    `json:"progress_milestone_index"`
 }
 
 type progressReportHttpReq struct {
@@ -23,7 +23,9 @@ type progressReportHttpReq struct {
 func (bC *blocClient) ReportFuncRunProgress(
 	ctx context.Context,
 	funcRunRecordID string,
-	progress float32, msg string, index int,
+	progress float32,
+	msg string,
+	index *int,
 ) error {
 	p := HighReadableFunctionRunProgress{}
 	dataValid := false
@@ -35,7 +37,7 @@ func (bC *blocClient) ReportFuncRunProgress(
 		p.Msg = msg
 		dataValid = true
 	}
-	if index > 0 {
+	if index != nil {
 		p.ProgressMilestoneIndex = index
 		dataValid = true
 	}
