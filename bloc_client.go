@@ -170,6 +170,10 @@ type blocClient struct {
 	sync.Mutex
 }
 
+func NewTestClient() *blocClient {
+	return NewClient("local_test")
+}
+
 func NewClient(clientName string) *blocClient {
 	return &blocClient{
 		Name: clientName,
