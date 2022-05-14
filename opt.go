@@ -4,6 +4,8 @@ import (
 	"strconv"
 )
 
+type Opts []*Opt
+
 type Opt struct {
 	Key         string    `json:"key"`
 	Description string    `json:"description"`

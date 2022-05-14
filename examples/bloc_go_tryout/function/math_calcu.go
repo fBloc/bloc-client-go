@@ -9,18 +9,44 @@ import (
 )
 
 func init() {
-	var _ bloc_client.FunctionDeveloperImplementInterface = &MathCalcu{}
+	var _ bloc_client.BlocFunctionNodeInterface = &MathCalcu{}
 }
 
 type MathCalcu struct {
 }
 
-func (*MathCalcu) AllProgressMilestones() []string {
-	return []string{
-		"start parsing ipt",
-		"start do the calculation",
-		"finished do the calculation",
+type progress int
+
+const (
+	startParseParam progress = iota
+	startDoCalculation
+	finish
+	maxProgress
+)
+
+func (p progress) String() string {
+	switch p {
+	case startParseParam:
+		return "start parsing param"
+	case startDoCalculation:
+		return "start do calculation"
+	case finish:
+		return "finished"
 	}
+	return "unknown"
+}
+
+func (p progress) MilestoneIndex() *int {
+	tmp := int(p)
+	return &tmp
+}
+
+func (*MathCalcu) AllProgressMilestones() []string {
+	tmp := make([]string, 0, maxProgress-1)
+	for i := 0; i < int(maxProgress); i++ {
+		tmp = append(tmp, progress(i).String())
+	}
+	return tmp
 }
 
 // IptConfig define function node's ipt config
@@ -68,8 +94,8 @@ type SucInMathCalcuAnimals struct {
 }
 
 // OptConfig
-func (*MathCalcu) OptConfig() []*bloc_client.Opt {
-	return []*bloc_client.Opt{
+func (*MathCalcu) OptConfig() bloc_client.Opts {
+	return bloc_client.Opts{
 		{
 			Key:         "result",
 			Description: "arithmetic operation result",
@@ -89,10 +115,10 @@ func (*MathCalcu) Run(
 ) {
 	// logger msg will be reported to bloc-server and can be represent in the frontend
 	// which means during this function's running, the frontend can get the realtime log msg
-	// logger.Infof("start")
+	logger.Infof("start")
 
 	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{
-		ProgressMilestoneIndex: 0, // AllProgressMilestones() index 0 - "start parsing ipt". which also will be represented in the frontend immediately.
+		ProgressMilestoneIndex: startParseParam.MilestoneIndex(), // AllProgressMilestones() index 0 - "start parsing ipt". which also will be represented in the frontend immediately.
 	}
 
 	numbersSlice, err := ipts.GetIntSliceValue(0, 0)
@@ -122,7 +148,9 @@ func (*MathCalcu) Run(
 		return
 	}
 
-	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{ProgressMilestoneIndex: 1}
+	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{
+		ProgressMilestoneIndex: startDoCalculation.MilestoneIndex(), // AllProgressMilestones() index 0 - "start parsing ipt". which also will be represented in the frontend immediately.
+	}
 
 	ret := 0
 	switch operator {
@@ -158,7 +186,8 @@ func (*MathCalcu) Run(
 		}
 		return
 	}
-	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{ProgressMilestoneIndex: 2}
+	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{
+		ProgressMilestoneIndex: finish.MilestoneIndex()}
 
 	blocOptChan <- &bloc_client.FunctionRunOpt{
 		Suc:         true,

@@ -79,8 +79,8 @@ func (*MathCalcu) IptConfig() bloc_client.Ipts {
 
 3. implement OptConfig() which defined function node's opt:
 ```go
-func (*MathCalcu) OptConfig() []*bloc_client.Opt {
-	return []*bloc_client.Opt{
+func (*MathCalcu) OptConfig() bloc_client.Opts {
+	return bloc_client.Opts{
 		{
 			Key:         "result",
 			Description: "arithmetic operation result",

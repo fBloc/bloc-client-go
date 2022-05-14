@@ -124,7 +124,7 @@ type Function struct {
 	Ipts               Ipts
 	Opts               []*Opt
 	ProgressMilestones []string
-	ExeFunc            FunctionDeveloperImplementInterface
+	ExeFunc            BlocFunctionNodeInterface
 }
 
 func (f *Function) IsNil() bool {
@@ -139,7 +139,7 @@ type FunctionGroup struct {
 func (functionGroup *FunctionGroup) AddFunction(
 	name string,
 	description string,
-	userImplementedFunc FunctionDeveloperImplementInterface) {
+	userImplementedFunc BlocFunctionNodeInterface) {
 	for _, function := range functionGroup.Functions {
 		if function.Name == name {
 			errorInfo := fmt.Sprintf(
@@ -259,7 +259,7 @@ func (bC *blocClient) GenReqServerPath(subPaths ...string) string {
 }
 
 func (bC *blocClient) TestRunFunction(
-	userFunction FunctionDeveloperImplementInterface,
+	userFunction BlocFunctionNodeInterface,
 	iptValues [][]interface{},
 ) FunctionRunOpt {
 	progressReportChan := make(chan HighReadableFunctionRunProgress)
