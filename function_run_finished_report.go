@@ -29,6 +29,7 @@ func newFuncRunFinishedHttpReqFromFuncOpt(
 		Suc:                       opt.Suc,
 		Canceled:                  opt.Canceled,
 		TimeoutCanceled:           opt.TimeoutCanceled,
+		InterceptBelowFunctionRun: opt.InterceptBelowFunctionRun,
 		ErrorMsg:                  opt.ErrorMsg,
 		Description:               opt.Description,
 		OptKeyMapBriefData:        opt.Brief,
