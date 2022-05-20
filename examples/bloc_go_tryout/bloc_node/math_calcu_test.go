@@ -1,4 +1,4 @@
-package function
+package bloc_node
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestMathCalcu(t *testing.T) {
-	blocClient := bloc_client.NewClient("test")
+	blocClient := bloc_client.NewTestClient()
 	funcRunOpt := blocClient.TestRunFunction(
 		&MathCalcu{},
 		[][]interface{}{
@@ -15,7 +15,7 @@ func TestMathCalcu(t *testing.T) {
 				[]interface{}{1, 2},
 			},
 			{ // ipt 2 group, arithmetic operator
-				1,
+				1, // "+" operater
 			},
 		},
 	)

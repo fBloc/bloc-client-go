@@ -1,4 +1,4 @@
-package function
+package bloc_node
 
 import (
 	"context"
@@ -18,18 +18,18 @@ type MathCalcu struct {
 type progress int
 
 const (
-	startParseParam progress = iota
-	startDoCalculation
+	parsingParam progress = iota
+	inCalculation
 	finish
 	maxProgress
 )
 
 func (p progress) String() string {
 	switch p {
-	case startParseParam:
-		return "start parsing param"
-	case startDoCalculation:
-		return "start do calculation"
+	case parsingParam:
+		return "parsing ipt"
+	case inCalculation:
+		return "in calculation"
 	case finish:
 		return "finished"
 	}
@@ -58,10 +58,10 @@ func (*MathCalcu) IptConfig() bloc_client.Ipts {
 			Must:    true, // this ipt must be set
 			Components: []*bloc_client.IptComponent{
 				{
-					ValueType:       bloc_client.IntValueType,     // input should be int type
+					ValueType:       bloc_client.IntValueType,     // input value should be int type
 					FormControlType: bloc_client.InputFormControl, // frontend should use input
 					Hint:            "input integer numbers",      // hint for user
-					AllowMulti:      true,                         // allow input multi
+					AllowMulti:      true,                         // multiple input is allowed
 				},
 			},
 		},
@@ -72,15 +72,15 @@ func (*MathCalcu) IptConfig() bloc_client.Ipts {
 			Components: []*bloc_client.IptComponent{
 				{
 					ValueType:       bloc_client.IntValueType,
-					FormControlType: bloc_client.SelectFormControl,
+					FormControlType: bloc_client.SelectFormControl, // frontend should use select
 					Hint:            "+/-/*/%",
-					SelectOptions: []bloc_client.SelectOption{
+					SelectOptions: []bloc_client.SelectOption{ // select options
 						{Label: "addition", Value: 1},
 						{Label: "subtraction", Value: 2},
 						{Label: "multiplication", Value: 3},
 						{Label: "division", Value: 4},
 					},
-					AllowMulti: false,
+					AllowMulti: false, // only allow single select value
 				},
 			},
 		},
@@ -95,6 +95,7 @@ type SucInMathCalcuAnimals struct {
 
 // OptConfig
 func (*MathCalcu) OptConfig() bloc_client.Opts {
+	// bloc_client.Opts: array type for a fixed order to show in the frontend which lead to a better user experience
 	return bloc_client.Opts{
 		{
 			Key:         "result",
@@ -118,20 +119,25 @@ func (*MathCalcu) Run(
 	logger.Infof("start")
 
 	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{
-		ProgressMilestoneIndex: startParseParam.MilestoneIndex(), // AllProgressMilestones() index 0 - "start parsing ipt". which also will be represented in the frontend immediately.
+		ProgressMilestoneIndex: parsingParam.MilestoneIndex(), // AllProgressMilestones() index 0 - "parsing ipt". which will be represented in the frontend immediately.
 	}
 
 	numbersSlice, err := ipts.GetIntSliceValue(0, 0)
 	if err != nil {
 		blocOptChan <- &bloc_client.FunctionRunOpt{
-			Suc:         false,
-			Description: "parse ipt `numbers` failed",
+			Suc:                       false,                        // function run failed
+			InterceptBelowFunctionRun: true,                         // intercept flow's below function run (you can think like raise panic in the flow)
+			ErrorMsg:                  "parse ipt `numbers` failed", // error description
 		}
+		// Suc can be false and InterceptBelowFunctionRun can also be false
+		// which means this function node's fail should not intercept it's below function node's running
 		return
 	}
 	if len(numbersSlice) <= 0 {
 		blocOptChan <- &bloc_client.FunctionRunOpt{
-			Suc: true,
+			Suc:                       true,
+			InterceptBelowFunctionRun: false,
+			Description:               "get no number to do calculation",
 			Detail: map[string]interface{}{ // detail should match the OptConfig()
 				"result": 0,
 			},
@@ -142,14 +148,15 @@ func (*MathCalcu) Run(
 	operator, err := ipts.GetIntValue(1, 0)
 	if err != nil {
 		blocOptChan <- &bloc_client.FunctionRunOpt{
-			Suc:         false,
-			Description: "parse ipt `arithmetic_operator` failed",
+			Suc:                       false,
+			InterceptBelowFunctionRun: true,
+			ErrorMsg:                  "parse ipt `arithmetic_operator` failed",
 		}
 		return
 	}
 
 	progressReportChan <- bloc_client.HighReadableFunctionRunProgress{
-		ProgressMilestoneIndex: startDoCalculation.MilestoneIndex(), // AllProgressMilestones() index 0 - "start parsing ipt". which also will be represented in the frontend immediately.
+		ProgressMilestoneIndex: inCalculation.MilestoneIndex(), // AllProgressMilestones() index 1 - "in calculation". which also will be represented in the frontend immediately.
 	}
 
 	ret := 0
@@ -172,8 +179,9 @@ func (*MathCalcu) Run(
 		for _, i := range numbersSlice[1:] {
 			if i == 0 {
 				blocOptChan <- &bloc_client.FunctionRunOpt{
-					Suc:         false,
-					Description: "division not allowed zero as denominator",
+					Suc:                       false,
+					InterceptBelowFunctionRun: true,
+					ErrorMsg:                  "division not allowed zero as denominator",
 				}
 				return
 			}
@@ -181,8 +189,9 @@ func (*MathCalcu) Run(
 		}
 	default:
 		blocOptChan <- &bloc_client.FunctionRunOpt{
-			Suc:         false,
-			Description: "not valid arithmetic_operator",
+			Suc:                       false,
+			InterceptBelowFunctionRun: true,
+			ErrorMsg:                  "not valid arithmetic_operator",
 		}
 		return
 	}
@@ -190,8 +199,9 @@ func (*MathCalcu) Run(
 		ProgressMilestoneIndex: finish.MilestoneIndex()}
 
 	blocOptChan <- &bloc_client.FunctionRunOpt{
-		Suc:         true,
-		Detail:      map[string]interface{}{"result": ret},
-		Description: fmt.Sprintf("received %d number", len(numbersSlice)),
+		Suc:                       true,
+		InterceptBelowFunctionRun: false,
+		Detail:                    map[string]interface{}{"result": ret},
+		Description:               fmt.Sprintf("received %d number", len(numbersSlice)),
 	}
 }
