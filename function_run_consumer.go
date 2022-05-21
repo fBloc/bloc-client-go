@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fBloc/bloc-client-go/internal/event"
+	"github.com/spf13/cast"
 )
 
 func (bC *blocClient) FunctionRunConsumer() {
@@ -166,20 +167,51 @@ func (bC *blocClient) FunctionRunConsumer() {
 		// save opt
 		if funcRunOpt.Suc {
 			funcRunOpt.KeyMapObjectStorageKey = make(map[string]string, len(funcRunOpt.Detail))
+			funcOptKeyMapValueType, funcOptKeyMapValueIsArray := functionIns.OptKeyMapValueTypeAndIsArray()
 			for optKey, optVal := range funcRunOpt.Detail {
+				minLength := 51
+				if funcRunOpt.Brief == nil {
+					funcRunOpt.Brief = make(map[string]string, len(funcRunOpt.Detail))
+				}
+
+				valueType := funcOptKeyMapValueType[optKey]
+				isArray := funcOptKeyMapValueIsArray[optKey]
+				briefValue := ""
+				if isArray {
+				} else {
+					switch valueType {
+					case StringValueType, JsonValueType: // only truncate long string
+						tmp, err := cast.ToStringE(optVal)
+						if err == nil {
+							tmpRune := []rune(tmp)
+							rightIndex := minLength
+							if len(tmpRune) < minLength {
+								rightIndex = len(tmpRune)
+							}
+							briefValue = string(tmpRune[:rightIndex])
+						}
+					default:
+						tmp, err := cast.ToStringE(optVal)
+						if err == nil {
+							briefValue = tmp
+						}
+					}
+				}
+				if briefValue != "" {
+					funcRunOpt.Brief[optKey] = briefValue
+				}
+
 				uploadByte, _ := json.Marshal(optVal)
 				ossKey := functionRunRecordIDStr + "_" + optKey
 				err = objectStorage.Set(ossKey, uploadByte)
 				if err == nil {
 					optInRune := []rune(string(uploadByte))
-					minLength := 51
 					if len(optInRune) < minLength {
 						minLength = len(optInRune)
 					}
-					if funcRunOpt.Brief == nil {
-						funcRunOpt.Brief = make(map[string]string, len(funcRunOpt.Detail))
+					if _, ok := funcRunOpt.Brief[optKey]; !ok {
+						funcRunOpt.Brief[optKey] = string(optInRune[:minLength-1])
 					}
-					funcRunOpt.Brief[optKey] = string(optInRune[:minLength-1])
 					funcRunOpt.KeyMapObjectStorageKey[optKey] = ossKey
 				} else {
 					funcRunOpt.Brief[optKey] = "存储运行输出到对象存储失败"

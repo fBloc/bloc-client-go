@@ -131,6 +131,23 @@ func (f *Function) IsNil() bool {
 	return f == nil || f.ID == "" || f.ExeFunc == nil
 }
 
+func (f *Function) OptKeyMapValueTypeAndIsArray() (
+	map[string]ValueType,
+	map[string]bool,
+) {
+	mapValueType := make(map[string]ValueType, len(f.Opts))
+	mapIsArray := make(map[string]bool, len(f.Opts))
+	if len(f.Opts) <= 0 {
+		return mapValueType, mapIsArray
+	}
+	for i := 0; i < len(f.Opts); i++ {
+		opt := f.Opts[i]
+		mapValueType[opt.Key] = opt.ValueType
+		mapIsArray[opt.Key] = opt.IsArray
+	}
+	return mapValueType, mapIsArray
+}
+
 type FunctionGroup struct {
 	Name      string
 	Functions []*Function

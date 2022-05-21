@@ -29,7 +29,7 @@ Let's write a simple bloc function node which receive some integers and do a des
 ### write bloc function node
 1. create a struct which stand for the function node:
 	```go
-	// math_calcu.go
+	// bloc_node/math_calcu.go
 	type MathCalcu struct {
 	}
 	```
