@@ -12,7 +12,6 @@ import (
 
 func (bC *blocClient) FunctionRunConsumer() {
 	event.InjectMq(bC.GetOrCreateEventMQ())
-	objectStorage := bC.GetOrCreateObjectStorage()
 	funcToRunEventChan := make(chan event.DomainEvent)
 	err := event.ListenEvent(
 		&event.ClientRunFunction{ClientName: bC.Name},
@@ -52,14 +51,17 @@ func (bC *blocClient) FunctionRunConsumer() {
 			continue
 		}
 
+		// report function_run start
+		err = bC.ReportFuncRunStart(traceCtx, functionRunRecordIDStr)
+		if err != nil {
+			logger.Errorf("report function run start to server failed: %v", err)
+		}
+
 		// 从brief中恢复出完整的ipt以供运行
 		completeIptSuc := true
 		for iptIndex, ipt := range funcRunRecordIns.IptBriefAndObjectStoragekey {
-			if !completeIptSuc {
-				break
-			}
 			for componentIndex, componentBrief := range ipt {
-				dataByte, err := objectStorage.Get(componentBrief.ObjectStorageKey)
+				dataByte, err := bC.FetchObjectStorageDataByKeyFromServer(componentBrief.ObjectStorageKey)
 				if err != nil {
 					msg := fmt.Sprintf(
 						"get ipt value from objectStorage failed. iptIndex-%d, componentIndex-%d. componentBrief-%s. error: %v",
@@ -119,24 +121,35 @@ func (bC *blocClient) FunctionRunConsumer() {
 		var funcRunOpt *FunctionRunOpt
 		ctx := context.Background()
 		ctx, cancelFunctionExecute := context.WithCancel(ctx)
+		heartBeatTicker := time.NewTicker(5 * time.Second)
 
-		// 开始运行
+		// before start function execute. send the first heartbeat!
+		bC.ReportFuncExecuteHeartbeat(traceCtx, functionRunRecordIDStr)
+
+		// run the function
 		go func() {
 			functionIns.ExeFunc.Run(
 				ctx, functionIns.Ipts,
 				progressReportChan, functionRunOptChan,
 				logger)
 		}()
+
+		// read the real-time msg & forward 2 server
 		for {
 			select {
-			// 1. 超时
+			// 0. report heartbeat
+			case <-heartBeatTicker.C:
+				bC.ReportFuncExecuteHeartbeat(
+					traceCtx,
+					functionRunRecordIDStr)
+			// 1. timeout
 			case <-timeOutChan:
 				logger.Infof("function run timeout canceled. function_run_record_id: %s", functionRunRecordIDStr)
 				funcRunOpt = &FunctionRunOpt{
 					Suc:             true,
 					TimeoutCanceled: true}
 				goto FunctionNodeRunFinished
-			// 2. flow被用户在前端取消
+			// 2. flow is canceled
 			case <-cancelCheckTimer.C:
 				isCanceled, err := bC.FlowRunIsCanceled(funcRunRecordIns.FlowRunRecordID)
 				if err == nil && isCanceled {
@@ -146,39 +159,35 @@ func (bC *blocClient) FunctionRunConsumer() {
 						Canceled: true}
 					goto FunctionNodeRunFinished
 				}
-			// 3. function运行进度上报
+			// 3. report run progress
 			case runningStatus := <-progressReportChan:
 				bC.ReportFuncRunProgress(
 					traceCtx,
-					functionRunRecordIDStr,
-					runningStatus.Progress,
-					runningStatus.Msg,
-					runningStatus.ProgressMilestoneIndex)
-			// 4. 运行成功完成
+					functionRunRecordIDStr, runningStatus.Progress,
+					runningStatus.Msg, runningStatus.ProgressMilestoneIndex)
+			// 4. finished!
 			case funcRunOpt = <-functionRunOptChan:
 				logger.Infof("function run suc")
 				goto FunctionNodeRunFinished
 			}
 		}
 	FunctionNodeRunFinished:
+		heartBeatTicker.Stop()
 		cancelFunctionExecute()
 		close(progressReportChan)
 		cancelCheckTimer.Stop()
+
 		// save opt
 		if funcRunOpt.Suc {
+			funcRunOpt.Brief = make(map[string]string, len(funcRunOpt.Detail))
 			funcRunOpt.KeyMapObjectStorageKey = make(map[string]string, len(funcRunOpt.Detail))
 			funcOptKeyMapValueType, funcOptKeyMapValueIsArray := functionIns.OptKeyMapValueTypeAndIsArray()
 			for optKey, optVal := range funcRunOpt.Detail {
 				minLength := 51
-				if funcRunOpt.Brief == nil {
-					funcRunOpt.Brief = make(map[string]string, len(funcRunOpt.Detail))
-				}
-
 				valueType := funcOptKeyMapValueType[optKey]
 				isArray := funcOptKeyMapValueIsArray[optKey]
 				briefValue := ""
-				if isArray {
-				} else {
+				if !isArray {
 					switch valueType {
 					case StringValueType, JsonValueType: // only truncate long string
 						tmp, err := cast.ToStringE(optVal)
@@ -201,20 +210,15 @@ func (bC *blocClient) FunctionRunConsumer() {
 					funcRunOpt.Brief[optKey] = briefValue
 				}
 
-				uploadByte, _ := json.Marshal(optVal)
-				ossKey := functionRunRecordIDStr + "_" + optKey
-				err = objectStorage.Set(ossKey, uploadByte)
-				if err == nil {
-					optInRune := []rune(string(uploadByte))
-					if len(optInRune) < minLength {
-						minLength = len(optInRune)
-					}
-					if _, ok := funcRunOpt.Brief[optKey]; !ok {
-						funcRunOpt.Brief[optKey] = string(optInRune[:minLength-1])
-					}
-					funcRunOpt.KeyMapObjectStorageKey[optKey] = ossKey
+				serverPersisResp, err := bC.PersistFunctionRunOptFieldToServer(
+					functionRunRecordIDStr, optKey, optVal)
+				if err != nil {
+					funcRunOpt.Brief[optKey] = "persist opt data to server failed: " + err.Error()
 				} else {
-					funcRunOpt.Brief[optKey] = "存储运行输出到对象存储失败"
+					if _, ok := funcRunOpt.Brief[optKey]; !ok {
+						funcRunOpt.Brief[optKey] = serverPersisResp.Brief
+					}
+					funcRunOpt.KeyMapObjectStorageKey[optKey] = serverPersisResp.ObjectStorageKey
 				}
 			}
 		}

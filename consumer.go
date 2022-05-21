@@ -16,7 +16,7 @@ func (bC *blocClient) Run() {
 	}(bC)
 
 	// function consumer
-	go bC.FunctionRunConsumerWithoutLocalObjectStorageImplemention()
+	go bC.FunctionRunConsumer()
 
 	forever := make(chan struct{})
 	<-forever
