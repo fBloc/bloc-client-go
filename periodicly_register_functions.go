@@ -69,23 +69,21 @@ func (bC *blocClient) RegisterFunctionsToServer() {
 	err = http_util.PostJson(
 		bC.GenReqServerPath(registerFuncPath),
 		http_util.BlankHeader, body, &resp)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, funcGroup := range bC.FunctionGroups {
-		groupName := funcGroup.Name
-		respFunctions := resp.Data.GroupNameMapFunctions[groupName]
-		nameMapRespFunc := make(map[string]*HttpRespFunction, len(respFunctions))
-		for _, f := range respFunctions {
-			if f.ErrorMsg != "" {
-				panic(f.ErrorMsg)
+	if err == nil {
+		for _, funcGroup := range bC.FunctionGroups {
+			groupName := funcGroup.Name
+			respFunctions := resp.Data.GroupNameMapFunctions[groupName]
+			nameMapRespFunc := make(map[string]*HttpRespFunction, len(respFunctions))
+			for _, f := range respFunctions {
+				if f.ErrorMsg != "" {
+					panic(f.ErrorMsg)
+				}
+				nameMapRespFunc[f.Name] = f
 			}
-			nameMapRespFunc[f.Name] = f
-		}
 
-		for _, function := range funcGroup.Functions {
-			function.ID = nameMapRespFunc[function.Name].ID
+			for _, function := range funcGroup.Functions {
+				function.ID = nameMapRespFunc[function.Name].ID
+			}
 		}
 	}
 }
