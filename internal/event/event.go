@@ -2,6 +2,7 @@ package event
 
 import (
 	"github.com/fBloc/bloc-client-go/internal/mq"
+	"github.com/streadway/amqp"
 
 	"github.com/pkg/errors"
 )
@@ -9,8 +10,9 @@ import (
 type DomainEvent interface {
 	Topic() string
 	Marshal() ([]byte, error)
-	Unmarshal(data []byte) error
+	Unmarshal(data *amqp.Delivery) (err error)
 	Identity() string
+	DeliveryTag() uint64
 }
 
 var needInitialMqInsAsEventChannelError = errors.New("lack init event mq rely")
@@ -44,15 +46,15 @@ func ListenEvent(
 		panic(needInitialMqInsAsEventChannelError)
 	}
 
-	msgByteChan := make(chan []byte)
-	err := driver.mqIns.Pull(event.Topic(), listenerTag, msgByteChan)
+	deliveryChan := make(chan *amqp.Delivery)
+	err := driver.mqIns.Pull(event.Topic(), listenerTag, deliveryChan)
 	if err != nil {
 		return errors.Wrap(err, "pull event failed")
 	}
 
 	go func() {
-		for msgByte := range msgByteChan {
-			err = event.Unmarshal(msgByte)
+		for del := range deliveryChan {
+			err = event.Unmarshal(del)
 			if err != nil {
 				panic(err)
 			}
@@ -61,4 +63,14 @@ func ListenEvent(
 	}()
 
 	return nil
+}
+
+func AckEvent(
+	event DomainEvent,
+) error {
+	if driver.mqIns == nil {
+		panic(needInitialMqInsAsEventChannelError)
+	}
+
+	return driver.mqIns.Ack(event.DeliveryTag())
 }

@@ -100,6 +100,10 @@ func (rmq *RabbitMQ) initQueueAndBindToExchange(
 	return q, err
 }
 
+func (rmq *RabbitMQ) Ack(deilveryTag uint64) error {
+	return rmq.channel.Ack(deilveryTag, false)
+}
+
 func (rmq *RabbitMQ) Pub(topic string, data []byte) error {
 	err := rmq.channel.Publish(
 		topicExchangeName, // exchange
@@ -116,7 +120,7 @@ func (rmq *RabbitMQ) Pub(topic string, data []byte) error {
 
 func (rmq *RabbitMQ) Pull(
 	topic, pullerTag string,
-	respMsgByteChan chan []byte,
+	respMsgByteChan chan *amqp.Delivery,
 ) error {
 	queue, err := rmq.initQueueAndBindToExchange(topic, pullerTag)
 	if err != nil {
@@ -126,7 +130,7 @@ func (rmq *RabbitMQ) Pull(
 	msgs, err := rmq.channel.Consume(
 		queue.Name, // queue
 		"",         // consumer
-		true,       // auto-ack, 不依赖底层具体实现的consume保证，应用层去保证
+		false,      // auto-ack
 		false,      // exclusive
 		false,      // no-local
 		false,      // no-wait
@@ -138,7 +142,7 @@ func (rmq *RabbitMQ) Pull(
 
 	go func() {
 		for d := range msgs {
-			respMsgByteChan <- d.Body
+			respMsgByteChan <- &d
 		}
 	}()
 

@@ -25,8 +25,5 @@ func (bC *blocClient) Run() {
 	}(bC)
 
 	// function consumer
-	go bC.FunctionRunConsumer()
-
-	forever := make(chan struct{})
-	<-forever
+	bC.FunctionRunConsumer()
 }
