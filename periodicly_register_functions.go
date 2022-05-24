@@ -39,7 +39,7 @@ type RegisterFuncReq struct {
 }
 type GroupNameMapFunctions map[string][]*HttpReqFunction
 
-func (bC *blocClient) RegisterFunctionsToServer() {
+func (bC *blocClient) RegisterFunctionsToServer() error {
 	req := RegisterFuncReq{
 		Who:                   bC.Name,
 		GroupNameMapFunctions: make(map[string][]*HttpReqFunction)}
@@ -62,7 +62,7 @@ func (bC *blocClient) RegisterFunctionsToServer() {
 
 	body, err := json.Marshal(req)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var resp RegisterFuncResp
@@ -86,4 +86,5 @@ func (bC *blocClient) RegisterFunctionsToServer() {
 			}
 		}
 	}
+	return err
 }
