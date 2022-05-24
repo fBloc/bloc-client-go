@@ -80,12 +80,14 @@ func post(remoteUrl string, headers map[string]string, bodyByte []byte) ([]byte,
 func PostJson(
 	remoteUrl string, headers map[string]string,
 	bodyByte []byte, respIns interface{}) error {
-	if headers == nil {
-		headers = make(map[string]string)
+	// if not do copy, exist concurrency issue
+	copyHeader := make(map[string]string, len(headers)+1)
+	for k, v := range headers {
+		copyHeader[k] = v
 	}
-	headers["content-type"] = "application/json"
+	copyHeader["content-type"] = "application/json"
 
-	respBodyByte, err := post(remoteUrl, headers, bodyByte)
+	respBodyByte, err := post(remoteUrl, copyHeader, bodyByte)
 	if err != nil {
 		return err
 	}
