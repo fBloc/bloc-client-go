@@ -1,48 +1,47 @@
 # bloc-client-go
-[中文](/README.zh-CN.md)
+[bloc](https://github.com/fBloc/bloc)的python client SDK
 
-The go language client SDK for [bloc](https://github.com/fBloc/bloc).
+可以基于此SDK使用开发基于go语言的 `bloc function`
 
-You can develop bloc's function node in go language based on this SDK.
+在继续之前，请确保你已经大概了解了[bloc](https://github.com/fBloc/bloc)是什么，并且已经通过[教程](https://github.com/fBloc/bloc/blob/main/docs/guide/deploy_local_environment_guide.md)在本地环境部署了bloc环境
 
-First make sure you already have a knowledge of [bloc](https://github.com/fBloc/bloc) and already have deployed a local test bloc environment(see [deploy a local bloc environment](https://github.com/fBloc/bloc/blob/main/docs/guide/deploy_local_environment_guide.md)).
+## bloc function是什么？
+bloc function就是开发者通过对应语言的bloc client SDK开发的一个函数，其在部署后便能够被用户在bloc前端看到，并可被编入工作流进行组合和自定义设置参数。待到对应工作流执行时到此函数时，就会按照用户在前端配置的参数进行执行并上报运行信息和运行结果到bloc。
 
-## What is bloc-function?
-bloc function is a function developed by developer using a certain program language bloc client SDK. After deploy, bloc function can be seen in the bloc frontend by all bloc users. At the same time, users can drag it into flow and set it's input param as they want. When the flow run until the function, the function will run with the custom input params and report log、progress、output to bloc.
+## 开发bloc function教程
+这里我们通过编写一个简单的 bloc function来进行说明。
 
-## Develop bloc function tutorial
-Let's write a simple bloc function which receive some integers and do a designated mathematical calculation to these integers.
+其接收多个整数，并且接收一个特定的算法。然后对那些数字执行对应的算法
 
-### prepare
-- create a directory for code
-	```shell
-	mkdir bloc_go_tryout && cd bloc_go_tryout
-	```
-- init 
-	```shell
+### 准备
+- 创建目录
+    ```shell
+    mkdir bloc_go_tryout && cd bloc_go_tryout
+    ```
+- 初始化
+    ```shell
 	go mod init bloc_go_tryout
 	```
-- install package
-	```shell
+- 安装依赖
+    ```shell
 	go get github.com/fBloc/bloc-client-go
 	```
-- create a folder to hold bloc_function_nodes
+- 创建一个用于放bloc function的目录
 	```shell
 	mkdir bloc_node
 	```
 
-### write bloc function
-1. create a struct which stand for the function node:
-	```go
+### 编写bloc function
+1. 首先创建一个结构体、其表示了这个bloc function节点
+    ```go
 	// bloc_node/math_calcu.go
 	type MathCalcu struct {
 	}
 	```
+    而后此bloc function 需要实现 [BlocFunctionNodeInterface](https://github.com/fBloc/bloc-client-go/blob/main/function_interface.go#L10)
 
-	then we are going to implement the [BlocFunctionNodeInterface](https://github.com/fBloc/bloc-client-go/blob/main/function_interface.go#L10).
-
-2. implement IptConfig() which defined function node's input params:
-	```go
+2. 实现 IptConfig() 方法 - 其描述了此function需要的入参:
+   ```go
 	func (*MathCalcu) IptConfig() bloc_client.Ipts {
 		return bloc_client.Ipts{
 			{
@@ -81,8 +80,8 @@ Let's write a simple bloc function which receive some integers and do a designat
 	}
 	```
 
-3. implement OptConfig() which defined function node's opt:
-	```go
+3. 实现 OptConfig() - 其描述了此function需要的出参:
+    ```go
 	func (*MathCalcu) OptConfig() bloc_client.Opts {
 		// bloc_client.Opts: array type for a fixed order to show in the frontend which lead to a better user experience
 		return bloc_client.Opts{
@@ -96,9 +95,11 @@ Let's write a simple bloc function which receive some integers and do a designat
 	}
 	```
 
-4. implement AllProgressMilestones() which define the highly readable describe milestones of the function node's run:
-	AllProgressMilestones() is designed for long run function, during it is running, it can report it's current running milestone for the user in frontend to get the information. If your function is quick run, maybe no need to set it and just return blank string array.
-	```go
+4.  实现 AllProgressMilestones() - 其定义了此函数在运行进度过程中的高可读的里程碑事件
+
+    此设计主要是为运行时间较长的函数准备的。当其正在运行时，其可以上报自己当前运行到的进度里程碑。从而关心进度的人能够在bloc前端看到此信息。如果你的bloc function很快就能运行完成，那就没必要设置这个了。
+
+    ```go
 	type progress int
 
 	const (
@@ -134,8 +135,9 @@ Let's write a simple bloc function which receive some integers and do a designat
 	}
 	```
 
-4. implement Run() which do the real work:
-	```go
+
+5. 实现 Run() - 真正的执行逻辑:
+    ```go
 	// Run do the real work
 	func (*MathCalcu) Run(
 		ctx context.Context,
@@ -236,11 +238,11 @@ Let's write a simple bloc function which receive some integers and do a designat
 		}
 	}
 	```
-- By now, we finished write the code of a bloc function, next we will write unit test code to this function node
+- 到此，我们完成了bloc function的核心定义代码。接下来我们它写测试代码
 
-### write unit test
-- write a simple unit test in `bloc_node/math_calcu_test.go`:
-	```go
+### 编写单元测试代码
+- 在`bloc_node/math_calcu_test.go`中编写简单的测试:
+    ```go
 	import (
 		"testing"
 
@@ -268,8 +270,7 @@ Let's write a simple bloc function which receive some integers and do a designat
 		}
 	}
 	```
-
-- under `bloc_node` directory, run command `go test -v .`, you will see the PASS. which means your function run meet your expectation.
+- 在 `bloc_node` 目录下, 执行命令 `go test -v .`, 你可以看到 `PASS`. 表示你开发的函数的运行满足你的预期
 	```shell
 	$ go test -v -count=1  .
 	=== RUN   TestMathCalcu
@@ -283,14 +284,14 @@ Let's write a simple bloc function which receive some integers and do a designat
 	```
 
 
-### report to the server
-After make sure your function runs well, you can deploy it to report to bloc.
+### 向 bloc-server 汇报
+当通过编写足够的测试确认你的函数运行没有问题了之后，你可以通过部署它来向bloc-server进行汇报
 
-I suppose you have already deployed a local bloc environment. if not, follow [guide](https://github.com/fBloc/bloc/blob/main/docs/guide/deploy_local_environment_guide.md) to deploy it.
+这里我假设你已经通过[教程](https://github.com/fBloc/bloc/blob/main/docs/guide/deploy_local_environment_guide.md)部署了一套本地bloc环境。如果是的话、请继续。
 
-- During `bloc_go_tryout` directory and make a `main.go` file with content:
-	```go
-	package main
+- 在 `bloc_go_tryout` 目录创建一个`main.go`文件，并写入内容:
+    ```go
+    package main
 
 	import (
 		bloc_client "github.com/fBloc/bloc-client-go"
@@ -319,15 +320,16 @@ I suppose you have already deployed a local bloc environment. if not, follow [gu
 
 		client.Run()
 	}
-	```
-- now run it:
-	```shell
-	go run main.go
-	```
-- After suc run, this client's all function node are registered to the bloc-server, which can be see and operate in the frontend, and this client will receive bloc-server's trigger function to run msg and do the execute. If you are first to the bloc web, you may check this [brief introduction to bloc web](https://docs.blocapp.xyz/docs/category/web%E7%AB%AF%E5%8A%9F%E8%83%BD%E7%AE%80%E4%BB%8B)
+    ```
+- 运行:
+    ```shell
+    go run main.go
+    ```
 
-### total code 
-you can find the demo code [here](https://github.com/fBloc/bloc-client-go/tree/main/examples/bloc_go_tryout).
+- 运行成功后，此bloc function就成功提交到bloc了。从而你可以在bloc web端看到与使用此function了（如果你刚刚接触bloc web端、不清楚有哪些操作，可见[教程](https://docs.blocapp.xyz/docs/category/web%E7%AB%AF%E5%8A%9F%E8%83%BD%E7%AE%80%E4%BB%8B)）
 
-## Other references
-- you can find more bloc function examples [here](https://github.com/fBloc/bloc-function-demo-go)
+### 完整代码
+[这里](https://github.com/fBloc/bloc-client-go/tree/main/examples/bloc_go_tryout)
+
+## 其他资料
+- 你可以在[这里](https://github.com/fBloc/bloc-function-demo-go) 找到更多更复杂的bloc function例子
